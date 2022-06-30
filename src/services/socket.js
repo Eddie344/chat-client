@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
+const url = import.meta.env.API_URL || 'localhost:8000';
 
-const socket = io('localhost:8000', {
+const socket = io(url, {
   autoConnect: false,
 });
 
