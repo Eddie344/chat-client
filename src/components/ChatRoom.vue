@@ -1,9 +1,10 @@
 <template>
-  <div
-    class="max-w-lg w-full shadow-md mx-auto bg-gradient-to-r from-emerald-100 to-violet-100 flex flex-col h-full"
-  >
+  <div class="max-w-lg w-full mx-auto flex flex-col h-full">
+    <header class="py-4 px-6 shadow">
+      <h1 class="text-lg font-bold">{{ userName }}</h1>
+    </header>
     <ul
-      class="flex-grow p-4 flex flex-col gap-y-4 overflow-y-auto"
+      class="flex-grow p-4 flex flex-col gap-y-4 overflow-y-auto bg-gradient-to-r from-emerald-100 to-violet-100"
       ref="messagesContainer"
     >
       <li
@@ -20,7 +21,7 @@
           v-if="message.senderId !== socket.id"
           class="text-sm text-gray-500"
         >
-          {{ message.senderId }}
+          {{ message.senderName }}
         </span>
         <p>
           {{ message.text }}
@@ -29,7 +30,7 @@
     </ul>
     <form
       @submit.prevent="send"
-      class="flex items-center bg-gray-100 p-2 gap-x-2"
+      class="flex items-center bg-gray-100 p-2 gap-x-2 shadow"
     >
       <UiInput v-model="message" block />
       <UiButton> Send </UiButton>
@@ -38,24 +39,18 @@
 </template>
 
 <script setup>
-import { io } from 'socket.io-client';
+import socket from '@/services/socket';
 import { nextTick, ref } from 'vue';
 import UiInput from '@/components/ui/UiInput.vue';
 import UiButton from '@/components/ui/UiButton.vue';
 
-const socket = io('localhost:8000');
+const props = defineProps({
+  userName: String,
+});
 
 const message = ref('');
 const messages = ref([]);
 const messagesContainer = ref();
-
-socket.on('connect', () => {
-  console.log(`My id: ${socket.id}`);
-});
-
-socket.on('user connected', (user) => {
-  console.log(`User ${user.userId} connected`);
-});
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -70,20 +65,20 @@ socket.on('message', (message) => {
   messages.value.push({
     text: message.text,
     senderId: message.senderId,
+    senderName: message.senderName,
   });
   scrollToBottom();
 });
 
 const send = () => {
   if (!message.value) return;
-  socket.emit('message', {
+  const messageData = {
     text: message.value,
     senderId: socket.id,
-  });
-  messages.value.push({
-    text: message.value,
-    senderId: socket.id,
-  });
+    senderName: props.userName,
+  };
+  socket.emit('message', messageData);
+  messages.value.push(messageData);
 
   scrollToBottom();
   message.value = '';
